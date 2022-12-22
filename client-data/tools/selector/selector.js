@@ -33,7 +33,7 @@
 		rotate: 5
 	}
 	var clicked = false;
-	var old_cursor = {};
+	var vector;
 	var angle = 0;
 	var selected = null;
 	var selected_els = [];
@@ -277,7 +277,6 @@
 
 	function startRotate(x, y, evt) {
 		evt.preventDefault();
-		old_cursor = { x: x, y: y };
 		if (origin_els.length == 0) {
 			origin_els = selected_els.map((el, i) => {
 				var oldTransform = get_transform_matrix(el);
@@ -305,6 +304,7 @@
 			w: bbox.a[0],
 			h: bbox.b[1],
 		};
+		vector = [selected.w / 2, selected.h / 2 ];
 		transform_elements = selected_els.map(function (el) {
 			var tmatrix = get_transform_matrix(el);
 			return {
@@ -318,7 +318,7 @@
 			[0, 0, 1]];
 			return matInverse(matrix);
 		})
-		console.log("inv", transform_elements, inv_transform_elements);
+		// console.log("inv", transform_elements, inv_transform_elements);
 		var tmatrix = get_transform_matrix(selectionRect);
 		selectionRectTransform = {
 			a: tmatrix.a, d: tmatrix.d,
@@ -345,9 +345,9 @@
 			var index;
 			console.log(selected_els);
 			if ((index = selected_els.indexOf(remove_els)) != -1) {
-	
+
 				selected_els.splice(index, 1);
-				console.log("Remove",index, remove_els,selected_els);
+				console.log("Remove", index, remove_els, selected_els);
 				resetSelectionRect();
 			}
 			if (selected_els.length == 0) {
@@ -358,45 +358,13 @@
 
 	function rotateSelection(x, y) {
 		var Cx = selected.x + selected.w / 2, Cy = selected.y + selected.h / 2;
-		var dX = x - selected.x, dY = y - (selected.y + selected.h);
-		var angle = Math.sqrt(Math.pow(dX, 2) + Math.pow(dY, 2)) / 30;
-		var dx = x - old_cursor.x, dy = old_cursor.y - y;
-		old_cursor = { x: x, y: y };
-		var dAngle = Math.hypot(dx, dy);
-		var tangle = Math.asin(Math.abs(dy) / dAngle);
-		// if (Math.abs(dx) > 3 || Math.abs(dy) > 3) 
-		// 	tangle =  (Math.atan2(dy, dx) * 180 / Math.PI);
-		// while (Math.abs(angle - tangle) > Math.PI) {
-		// 	if (tangle > angle) {
-		// 		tangle -= 2 * Math.PI;
-		// 	} else if (tangle < angle) {
-		// 		tangle += 2 * Math.PI;
-		// 	}
-		// }
-		if (dx > 0) {
-			if (dy < 0)
-				tangle *= -1;
+		
+		var V2 = [x - Cx, Cy -y];
 
-		} else {
-			if (dy < 0)
-				tangle += Math.PI;
-			else
-				tangle = Math.PI - tangle;
-		}
-		// tangle += Math.PI / 2;
-		if (tangle < angle) {
-			dAngle *= -1;
-		}
-		dAngle *= (tangle - angle) / Math.abs(tangle - angle)
-		if (Math.abs(tangle - angle) > Math.PI) {
-			dAngle *= -1;
-		}
-		// angle = -tangle;
-		// console.log("T:", tangle * 180 / Math.PI, "Angle:", angle * 180 / Math.PI);
-		if (Math.abs(-tangle - angle) > Math.abs(dAngle) / 50.0)
-			angle -= dAngle / 50.0;
-		if (Math.abs(angle) > 2 * Math.PI)
-			angle -= 2 * Math.PI * angle / Math.abs(angle);
+		var angle = Math.atan2(V2[1],V2[0]);
+		var _angle = Math.atan2(vector[1],vector[0]);
+		angle = _angle - angle;
+
 		var tmatrix = get_transform_matrix(selectionRect);
 		var msgs = selected_els.map(function (el, i) {
 			var old = transform_elements[i];
@@ -616,7 +584,9 @@
 	}
 
 	function resetSelectionRect() {
-		if (currentTransform != moveSelection) {
+		if (!selected_els.length)
+			return;
+		if (currentTransform) {
 			angle = 0;
 			var padding = 20;
 			var tmpBBox = {};
@@ -630,17 +600,17 @@
 					[bbox.r[0] + bbox.b[0], bbox.r[1] + bbox.b[1]],
 					[bbox.r[0] + bbox.a[0] + bbox.b[0], bbox.r[1] + bbox.a[1] + bbox.b[1]]
 				]
-				for(i = 0; i < 4; i++){
-					if(minX > point[i][0])
+				for (i = 0; i < 4; i++) {
+					if (minX > point[i][0])
 						minX = point[i][0];
-					if(minY > point[i][1])
+					if (minY > point[i][1])
 						minY = point[i][1];
-					if(maxX < point[i][0])
+					if (maxX < point[i][0])
 						maxX = point[i][0];
-					if(maxY < point[i][1])
+					if (maxY < point[i][1])
 						maxY = point[i][1];
 				}
-				console.log(point,minX,minY,maxX,maxY);
+				// console.log(point,minX,minY,maxX,maxY);
 			})
 			selectionRect.x.baseVal.value = minX - padding;
 			selectionRect.y.baseVal.value = minY - padding;
@@ -741,6 +711,7 @@
 		if (selectorState == selectorStates.selecting) {
 
 			selected_els = calculateSelection();
+			resetSelectionRect();
 			angle = 0;
 			if (selected_els.length == 0) {
 				hideSelectionUI();
@@ -776,7 +747,7 @@
 		}
 
 		if (selectorState == selectorStates.add || selectorState == selectorStates.remove) {
-			// resetSelectionRect()
+			resetSelectionRect()
 		} else
 			selectorState = selectorStates.pointing;
 	}

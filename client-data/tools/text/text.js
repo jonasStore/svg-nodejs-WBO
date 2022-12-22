@@ -206,6 +206,8 @@
 		elem.setAttribute("font-size", fieldData.size);
 		elem.setAttribute("fill", fieldData.color);
 		elem.setAttribute("opacity", Math.max(0.1, Math.min(1, fieldData.opacity)) || 1);
+		if (fieldData.transform)
+				elem.setAttribute("transform", `matrix(${fieldData.transform.a},${fieldData.transform.b},${fieldData.transform.c},${fieldData.transform.d},${fieldData.transform.e},${fieldData.transform.f})`);
 		if (fieldData.txt) elem.textContent = fieldData.txt;
 		Tools.drawingArea.appendChild(elem);
 		return elem;

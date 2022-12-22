@@ -96,6 +96,7 @@
 	}
 
 	var renderingLine = {};
+
 	function draw(data) {
 		Tools.drawingEvent = true;
 		switch (data.type) {
@@ -107,7 +108,7 @@
 				var line = (renderingLine.id === data.parent) ? renderingLine : svg.getElementById(data.parent);
 				if (!line) {
 					console.error("Pencil: Hmmm... I received a point of a line that has not been created (%s).", data.parent);
-					line = renderingLine = createLine({ "id": data.parent }); //create a new line in order not to loose the points
+					line = renderingLine = createLine({ "id": data.parent, "transform": `matrix(${data.transform.a},${data.transform.b},${data.transform.c},${data.transform.d},${data.transform.e},${data.transform.f})` }); //create a new line in order not to loose the points
 				}
 				addPoint(line, data.x, data.y);
 				break;
@@ -149,6 +150,8 @@
 		line.setAttribute("stroke", lineData.color || "black");
 		line.setAttribute("stroke-width", lineData.size || 10);
 		line.setAttribute("opacity", Math.max(0.1, Math.min(1, lineData.opacity)) || 1);
+		if (lineData.transform)
+				line.setAttribute("transform", `matrix(${lineData.transform.a},${lineData.transform.b},${lineData.transform.c},${lineData.transform.d},${lineData.transform.e},${lineData.transform.f})`);
 		Tools.drawingArea.appendChild(line);
 		return line;
 	}

@@ -159,8 +159,8 @@
 			move(x, y);
 			end = false;
 			if (curId) {
-				Tools.addActionToHistory({type: "delete", id: curId});
-				Tools.socket.emit("pushActionToHistory",{type: "delete", id: curId})
+				Tools.addActionToHistory({ type: "delete", id: curId });
+				Tools.socket.emit("pushActionToHistory", { type: "delete", id: curId })
 			}
 			curId = "";
 		} else {
@@ -168,8 +168,8 @@
 			lastPos.y = y;
 			doUpdate(true);
 			if (curUpdate.id) {
-				Tools.addActionToHistory({type: "delete", id: curUpdate.id})
-				Tools.socket.emit("pushActionToHistory",{type: "delete", id: curUpdate.id})
+				Tools.addActionToHistory({ type: "delete", id: curUpdate.id })
+				Tools.socket.emit("pushActionToHistory", { type: "delete", id: curUpdate.id })
 			}
 			curUpdate.id = "";
 		}
@@ -189,7 +189,8 @@
 						createShape({ //create a new shape in order not to loose the points
 							"id": data['id'],
 							"x": data['x2'],
-							"y": data['y2']
+							"y": data['y2'],
+							"transform": `matrix(${data.transfrom.a},${data.transfrom.b},${data.transfrom.c},${data.transfrom.d},${data.transfrom.e},${data.transfrom.f})`
 						});
 					}
 					updateShape(shape, data);
@@ -210,7 +211,8 @@
 						createShape({ //create a new shape in order not to loose the points
 							"id": data['id'],
 							"x": data['x2'],
-							"y": data['y2']
+							"y": data['y2'],
+							"transform": `matrix(${data.transfrom.a},${data.transfrom.b},${data.transfrom.c},${data.transfrom.d},${data.transfrom.e},${data.transfrom.f})`
 						});
 					}
 					updateShape(shape, data);
@@ -233,6 +235,8 @@
 			shape.setAttribute("stroke", data.color || "black");
 			shape.setAttribute("stroke-width", data.size || 10);
 			shape.setAttribute("opacity", Math.max(0.1, Math.min(1, data.opacity)) || 1);
+			if (data.transform)
+				shape.setAttribute("transform", `matrix(${data.transform.a},${data.transform.b},${data.transform.c},${data.transform.d},${data.transform.e},${data.transform.f})`);
 			Tools.drawingArea.appendChild(shape);
 			return shape;
 		}
@@ -245,6 +249,8 @@
 			shape.setAttribute("stroke", data.color || "black");
 			shape.setAttribute("stroke-width", data.size || 10);
 			shape.setAttribute("opacity", Math.max(0.1, Math.min(1, data.opacity)) || 1);
+			if (data.transform)
+				shape.setAttribute("transform", `matrix(${data.transform.a},${data.transform.b},${data.transform.c},${data.transform.d},${data.transform.e},${data.transform.f})`);
 			Tools.drawingArea.appendChild(shape);
 			return shape;
 		}

@@ -812,6 +812,7 @@ Tools.undo = (function () {
 	function update() {
 		if (Tools.history.length) {
 			const action = Tools.history.pop();
+			console.log("Undo", Tools.history,action);
 			Tools.socket.emit("popActionToHistory", {});
 			if (Tools.history.length === 0) {
 				Tools.disableToolsEl('undo');

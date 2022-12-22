@@ -102,7 +102,8 @@
                     createLine({ //create a new line in order not to loose the points
                         "id": data['id'],
                         "x": data['x2'],
-                        "y": data['y2']
+                        "y": data['y2'],
+                        "transform": `matrix(${data.transform.a},${data.transform.b},${data.transform.c},${data.transform.d},${data.transform.e},${data.transform.f})`
                     });
                 }
                 updateLine(line, data);
@@ -132,6 +133,8 @@
         line.setAttribute("stroke", color);
         line.setAttribute("stroke-width", lineData.size || 10);
         line.setAttribute("opacity", Math.max(0.1, Math.min(1, lineData.opacity)) || 1);
+        if (lineData.transform)
+				line.setAttribute("transform", `matrix(${lineData.transform.a},${lineData.transform.b},${lineData.transform.c},${lineData.transform.d},${lineData.transform.e},${lineData.transform.f})`);
         Tools.drawingArea.appendChild(line);
         return line;
     }
@@ -154,6 +157,8 @@
     function updateLine(line, data) {
         line.x2.baseVal.value = data['x2'];
         line.y2.baseVal.value = data['y2'];
+        if (data.transform)
+				line.setAttribute("transform", `matrix(${data.transform.a},${data.transform.b},${data.transform.c},${data.transform.d},${data.transform.e},${data.transform.f})`);
     }
 
     var lineTool = {
