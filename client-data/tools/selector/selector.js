@@ -44,6 +44,7 @@
 	var transform_elements = [];
 	var inv_transform_elements = [];
 	var selectorState = selectorStates.pointing;
+	var exsitTransform = false;
 	var last_sent = 0;
 	var blockedSelectionButtons = Tools.server_config.BLOCKED_SELECTION_BUTTONS;
 	var selectionButtons = [
@@ -160,6 +161,7 @@
 			|| (selected_els.length == 0)) return;
 		var msgs = [];
 		var newids = [];
+		var history = []
 		for (var i = 0; i < selected_els.length; i++) {
 			var id = selected_els[i].id;
 			msgs[i] = {
@@ -167,9 +169,17 @@
 				id: id,
 				newid: Tools.generateUID(id[0])
 			};
+			history[i] = {
+				type: "delete",
+				id: msgs[i].newid
+			};
 			newids[i] = id;
 		}
 		Tools.drawAndSend({ _children: msgs });
+		Tools.addActionToHistory({
+			type: "array",
+			events: history
+		});
 		selected_els = newids.map(function (id) {
 			return Tools.svg.getElementById(id);
 		});
@@ -304,7 +314,7 @@
 			w: bbox.a[0],
 			h: bbox.b[1],
 		};
-		vector = [selected.w / 2, selected.h / 2 ];
+		vector = [selected.w / 2, selected.h / 2];
 		transform_elements = selected_els.map(function (el) {
 			var tmatrix = get_transform_matrix(el);
 			return {
@@ -358,11 +368,11 @@
 
 	function rotateSelection(x, y) {
 		var Cx = selected.x + selected.w / 2, Cy = selected.y + selected.h / 2;
-		
-		var V2 = [x - Cx, Cy -y];
 
-		var angle = Math.atan2(V2[1],V2[0]);
-		var _angle = Math.atan2(vector[1],vector[0]);
+		var V2 = [x - Cx, Cy - y];
+
+		var angle = Math.atan2(V2[1], V2[0]);
+		var _angle = Math.atan2(vector[1], vector[0]);
 		angle = _angle - angle;
 
 		var tmatrix = get_transform_matrix(selectionRect);
@@ -410,6 +420,7 @@
 		} else {
 			draw(msg);
 		}
+		exsitTransform = true;
 	}
 
 	function startScalingTransform(x, y, evt) {
@@ -528,15 +539,21 @@
 		} else {
 			draw(msg);
 		}
+		exsitTransform = true;
 	}
 
 	function scaleSelection(x, y) {
-		var rx = (x - selected.x) / (selected.w);
-		var ry = (y - selected.y) / (selected.h);
+		var tx = rx = (x - selected.x) / (selected.w);
+		var ty = ry = (y - selected.y) / (selected.h);
 		var msgs = selected_els.map(function (el, i) {
 			var oldTransform = transform_elements[i];
 			var x = el.transformedBBox().r[0];
 			var y = el.transformedBBox().r[1];
+			var rx = tx, ry = ty;
+			if (el.tagName == 'text') {
+				rx = Math.abs(rx) > Math.abs(ry) ? Math.abs(ry) * tx / Math.abs(tx) : Math.abs(rx) * tx / Math.abs(tx);
+				ry = Math.abs(rx) * ty / Math.abs(ty);
+			}
 			var a = oldTransform.a * rx;
 			var d = oldTransform.d * ry;
 			var e = selected.x * (1 - rx) - x * a +
@@ -548,8 +565,8 @@
 				id: el.id,
 				transform: {
 					a: a,
-					b: oldTransform.b,
-					c: oldTransform.c,
+					b: oldTransform.b * rx,
+					c: oldTransform.c * ry,
 					d: d,
 					e: e,
 					f: f
@@ -574,6 +591,8 @@
 		} else {
 			draw(msg);
 		}
+		exsitTransform = true;
+		console.log("scale?");
 	}
 
 	function updateRect(x, y, rect) {
@@ -586,7 +605,7 @@
 	function resetSelectionRect() {
 		if (!selected_els.length)
 			return;
-		if (currentTransform) {
+		if (true) {
 			angle = 0;
 			var padding = 20;
 			var tmpBBox = {};
@@ -616,12 +635,6 @@
 			selectionRect.y.baseVal.value = minY - padding;
 			selectionRect.width.baseVal.value = maxX - minX + 2 * padding;
 			selectionRect.height.baseVal.value = maxY - minY + 2 * padding;
-		} else {
-			var bbox = selectionRect.transformedBBox();
-			selectionRect.x.baseVal.value = bbox.r[0];
-			selectionRect.y.baseVal.value = bbox.r[1];
-			selectionRect.width.baseVal.value = bbox.a[0];
-			selectionRect.height.baseVal.value = bbox.b[1];
 		}
 		var tmatrix = get_transform_matrix(selectionRect);
 		tmatrix.a = 1; tmatrix.b = 0; tmatrix.c = 0;
@@ -684,7 +697,6 @@
 			button.clickCallback(x, y, evt);
 
 		} else if (pointInTransformedBBox([x, y], selectionRect.transformedBBox())) {
-			// console.log('here');
 
 			if (selectorState == selectorStates.remove) {
 
@@ -696,10 +708,10 @@
 			if (selectorState == selectorStates.add) {
 
 			} else if (Tools.drawingArea.contains(evt.target)) {
-				// console.log('here1');
 				hideSelectionUI();
 				selected_els = [getParentMathematics(evt.target)];
-				startMovingElements(x, y, evt);
+				selectorState = selectorStates.transform;
+				startMovingElements(x, y, evt)
 			} else {
 				hideSelectionButtons();
 				startSelector(x, y, evt);
@@ -720,11 +732,16 @@
 
 		}
 		if (selectorState == selectorStates.transform) {
-			// updateRect(x, y, selectionRect)
+			updateRect(x, y, selectionRect)
+			// hideSelectionButtons();
 			resetSelectionRect();
 		}
-		if (selected_els.length != 0) showSelectionButtons();
-		if (origin_els.length != 0) {
+		if (selected_els.length != 0) {
+			selectionRect.style.display = "";
+			resetSelectionRect()
+			showSelectionButtons();
+		}
+		if (exsitTransform && (origin_els.length != 0)) {
 			// Tools.history.push({_children: msg})
 
 			origin_els = origin_els.map((el, i) => {
@@ -778,11 +795,13 @@
 	}
 
 	function release(x, y, evt, isTouchEvent) {
-		move(x, y, evt, isTouchEvent);
+		if ((selected.x != x) && (selected.y != y))
+			move(x, y, evt, isTouchEvent);
 		releaseSelector(x, y, evt, isTouchEvent);
 		selected = null;
 		origin_els = [];
 		clicked = false;
+		exsitTransform = false;
 	}
 
 	function deleteShortcut(e) {
@@ -819,5 +838,6 @@
 		"showMarker": true,
 	};
 	Tools.add(handTool);
+	Tools.hideSelectionUI = hideSelectionUI;
 	Tools.change("Hand"); // Use the hand tool by default
 })(); //End of code isolation

@@ -16,8 +16,10 @@
     "socket.io": "^4"
   },
   "scripts": {
-    "start": "node ./server/server.js",
-    "test": "nightwatch tests && nightwatch tests --env jwt"
+    "start": "node ./server/server.js pro",
+    "dev": "concurrently -n server,uglify \"node ./server/server.js\" \"nodemon --watch ./client-data ./server/minimize.js\"",
+    "test": "nightwatch tests && nightwatch tests --env jwt",
+    "minimize": "node ./server/minimize.js"
   },
   "main": "./server/server.js",
   "repository": {
@@ -25,6 +27,7 @@
     "url": "http://github.com/lovasoa/whitebophir.git"
   },
   "devDependencies": {
+    "findit": "^2.0.0",
     "geckodriver": "^3.0.1",
     "nightwatch": "^1.7.12"
   }

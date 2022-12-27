@@ -1,0 +1,10 @@
+path {
+	fill: none;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+path.dotted {
+	stroke-dasharray: 15;
+	stroke-linecap: butt;
+} 

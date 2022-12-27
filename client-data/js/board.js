@@ -47,6 +47,7 @@ Tools.drawingEvent = true;
 Tools.showMarker = true;
 Tools.showOtherCursors = true;
 Tools.showMyCursor = true;
+Tools.hideSelectionUI = null;
 
 Tools.isIE = /MSIE|Trident/.test(window.navigator.userAgent);
 
@@ -79,13 +80,11 @@ Tools.connect = function () {
 	});
 
 	this.socket.on("addActionToHistory", function (msg) {
-		console.log("addActionToHistory", msg)
 		Tools.addActionToHistory(msg, true);
 		// Tools.enableToolsEl('undo');
 	});
 
 	this.socket.on("addActionToHistoryRedo", function (msg) {
-		console.log("addActionToHistoryRedo", msg);
 		Tools.addActionToHistoryRedo(msg, true);
 		// Tools.historyRedo.push(msg);
 		// Tools.enableToolsEl('redo');
@@ -811,6 +810,8 @@ Tools.undo = (function () {
 
 	function update() {
 		if (Tools.history.length) {
+			if(Tools.hideSelectionUI)
+				Tools.hideSelectionUI();
 			const action = Tools.history.pop();
 			console.log("Undo", Tools.history,action);
 			Tools.socket.emit("popActionToHistory", {});

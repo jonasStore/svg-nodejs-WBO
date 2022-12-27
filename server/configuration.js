@@ -25,10 +25,11 @@
  */
 const path = require("path");
 const app_root = path.dirname(__dirname); // Parent of the directory where this file is
-
+console.log(process.argv[2] == 'pro')
 module.exports = {
   /** Port on which the application will listen */
-  PORT: parseInt(process.env["PORT"]) || 8000,
+  PORT: (process.argv[2]== 'pro') ? 8080 : parseInt(process.env["PORT"]) || 8000,
+  // PORT: parseInt(process.env["PORT"]) || 8000,
 
   /** Host on which the application will listen (defaults to undefined,
         hence listen on all interfaces on all IP addresses, but could also be
@@ -40,7 +41,8 @@ module.exports = {
     process.env["WBO_HISTORY_DIR"] || path.join(app_root, "server-data"),
 
   /** Folder from which static files will be served */
-  WEBROOT: process.env["WBO_WEBROOT"] || path.join(app_root, "client-data"),
+  WEBROOT: (process.argv[2] == 'pro') ? path.join(app_root, "client-min-data") :  process.env["WBO_WEBROOT"] || path.join(app_root, "client-data"),
+  // WEBROOT: process.env["WBO_WEBROOT"] || path.join(app_root, "client-data"),
 
   /** Number of milliseconds of inactivity after which the board should be saved to a file */
   SAVE_INTERVAL: parseInt(process.env["WBO_SAVE_INTERVAL"]) || 1000 * 2, // Save after 2 seconds of inactivity
