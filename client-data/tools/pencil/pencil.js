@@ -87,10 +87,7 @@
 			    type: "delete", 
 			    id: curLineId
 			});
-			Tools.socket.emit("pushActionToHistory",{ 
-				type: "delete", 
-				id: curLineId 
-			})
+			
 		}
 		curLineId = "";
 	}
@@ -150,6 +147,7 @@
 		line.setAttribute("stroke", lineData.color || "black");
 		line.setAttribute("stroke-width", lineData.size || 10);
 		line.setAttribute("opacity", Math.max(0.1, Math.min(1, lineData.opacity)) || 1);
+
 		if (lineData.transform)
 				line.setAttribute("transform", `matrix(${lineData.transform.a},${lineData.transform.b},${lineData.transform.c},${lineData.transform.d},${lineData.transform.e},${lineData.transform.f})`);
 		Tools.drawingArea.appendChild(line);

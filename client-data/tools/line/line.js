@@ -26,7 +26,7 @@
 (function () { //Code isolation
 	//Indicates the id of the line the user is currently drawing or an empty string while the user is not drawing
 	var curLine = null,
-	    shift = false,
+		shift = false,
 		lastTime = performance.now(); //The time at which the last point was drawn
 
 	//The data of the message that will be sent for every update
@@ -84,15 +84,11 @@
 	function stopLine(x, y) {
 		//Add a last point to the line
 		continueLine(x, y);
-		if (curLine) 
-		Tools.addActionToHistory({ 
-		    type: "delete", 
-		    id: curLine.id 
-		});
-		Tools.socket.emit("pushActionToHistory",{ 
-		    type: "delete", 
-		    id: curLine.id 
-		})
+		if (curLine)
+			Tools.addActionToHistory({
+				type: "delete",
+				id: curLine.id
+			});
 		curLine = null;
 	}
 
@@ -135,7 +131,7 @@
 		line.setAttribute("stroke-width", lineData.size || 10);
 		line.setAttribute("opacity", Math.max(0.1, Math.min(1, lineData.opacity)) || 1);
 		if (lineData.transform)
-				line.setAttribute("transform", `matrix(${lineData.transform.a},${lineData.transform.b},${lineData.transform.c},${lineData.transform.d},${lineData.transform.e},${lineData.transform.f})`);
+			line.setAttribute("transform", `matrix(${lineData.transform.a},${lineData.transform.b},${lineData.transform.c},${lineData.transform.d},${lineData.transform.e},${lineData.transform.f})`);
 		Tools.drawingArea.appendChild(line);
 		return line;
 	}
@@ -143,8 +139,6 @@
 	function updateLine(line, data) {
 		line.x2.baseVal.value = data['x2'];
 		line.y2.baseVal.value = data['y2'];
-		if (line.transform)
-				line.setAttribute("transform", `matrix(${line.transform.a},${line.transform.b},${line.transform.c},${line.transform.d},${line.transform.e},${line.transform.f})`);
 	}
 
 	var lineTool = {

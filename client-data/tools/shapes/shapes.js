@@ -160,7 +160,6 @@
 			end = false;
 			if (curId) {
 				Tools.addActionToHistory({ type: "delete", id: curId });
-				Tools.socket.emit("pushActionToHistory", { type: "delete", id: curId })
 			}
 			curId = "";
 		} else {
@@ -169,7 +168,6 @@
 			doUpdate(true);
 			if (curUpdate.id) {
 				Tools.addActionToHistory({ type: "delete", id: curUpdate.id })
-				Tools.socket.emit("pushActionToHistory", { type: "delete", id: curUpdate.id })
 			}
 			curUpdate.id = "";
 		}

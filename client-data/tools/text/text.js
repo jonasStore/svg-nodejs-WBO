@@ -121,10 +121,6 @@
 			    type: "delete", 
 			    id: curText.id
 			});
-			Tools.socket.emit("pushActionToHistory",{ 
-			    type: "delete", 
-			    id: curText.id
-			})
 		}
 		curText.id = 0;
 		curText.sentText = "";

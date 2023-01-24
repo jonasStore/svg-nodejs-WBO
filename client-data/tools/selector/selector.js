@@ -34,7 +34,6 @@
 	}
 	var clicked = false;
 	var vector;
-	var angle = 0;
 	var selected = null;
 	var selected_els = [];
 	var origin_els = [];
@@ -238,6 +237,7 @@
 	}
 
 	function startMovingElements(x, y, evt) {
+		evt.preventDefault();
 		if (origin_els.length == 0) {
 			origin_els = selected_els.map((el, i) => {
 				var oldTransform = get_transform_matrix(el);
@@ -256,7 +256,7 @@
 			})
 			// console.log("test", origin_els);
 		}
-		evt.preventDefault();
+
 		selectorState = selectorStates.transform;
 		currentTransform = moveSelection;
 		selected = { x: x, y: y };
@@ -377,29 +377,29 @@
 
 		var tmatrix = get_transform_matrix(selectionRect);
 		var msgs = selected_els.map(function (el, i) {
-			var old = transform_elements[i];
+			var oldTransform = transform_elements[i];
 
 			var curPos = matProduct(inv_transform_elements[i], [[Cx], [Cy], [1]]);
 			// console.log("inv", [Cx, Cy, 0], curPos);
-			var a = old.a * Math.cos(angle) + old.c * Math.sin(angle);
-			var b = old.b * Math.cos(angle) + old.d * Math.sin(angle);
-			var c = -old.a * Math.sin(angle) + old.c * Math.cos(angle);
-			var d = -old.b * Math.sin(angle) + old.d * Math.cos(angle);
-			var e = old.a * (-curPos[0][0] * Math.cos(angle) + curPos[1][0] * Math.sin(angle) + curPos[0][0])
-				+ old.c * (-curPos[0][0] * Math.sin(angle) - curPos[1][0] * Math.cos(angle) + curPos[1][0]) + old.e;
-			var f = old.b * (-curPos[0][0] * Math.cos(angle) + curPos[1][0] * Math.sin(angle) + curPos[0][0])
-				+ old.d * (-curPos[0][0] * Math.sin(angle) - curPos[1][0] * Math.cos(angle) + curPos[1][0]) + old.f;
-
+			var a = Math.cos(angle);
+			var b = Math.sin(angle);
+			var c = -Math.sin(angle);
+			var d = Math.cos(angle);
+			// var e = -curPos[0][0] * Math.cos(angle) + curPos[1][0] * Math.sin(angle) + curPos[0][0];
+			// var f = -curPos[0][0] * Math.sin(angle) - curPos[1][0] * Math.cos(angle) + curPos[1][0];
+			var e = -Cx * Math.cos(angle) + Cy * Math.sin(angle) + Cx;
+			var f = -Cx * Math.sin(angle) - Cy * Math.cos(angle) + Cy;
+			var finalMatrix = matProduct([[a, c, e], [b, d, f], [0, 0, 1]], [[oldTransform.a, oldTransform.c, oldTransform.e], [oldTransform.b, oldTransform.d, oldTransform.f], [0, 0, 1]])
 			return {
 				type: "update",
 				id: el.id,
 				transform: {
-					a: a,//Math.cos(angle),
-					b: b,//Math.sin(angle),
-					c: c,//-Math.sin(angle),
-					d: d,//Math.cos(angle),
-					e: e,//-Cx * Math.cos(angle) + Cy * Math.sin(angle) + Cx,
-					f: f,//-Cx * Math.sin(angle) - Cy * Math.cos(angle) + Cy
+					a: finalMatrix[0][0],
+					b: finalMatrix[1][0],
+					c: finalMatrix[0][1],
+					d: finalMatrix[1][1],
+					e: finalMatrix[0][2],
+					f: finalMatrix[1][2]
 				}
 			};
 		})
@@ -512,7 +512,6 @@
 			[el_matrix.b, el_matrix.d, el_matrix.f],
 			[0, 0, 1]]
 			var inv_matrix = matInverse(matrix);
-			// console.log("inv", matrix, inv_matrix);
 			return {
 				type: "update",
 				id: el.id,
@@ -522,7 +521,7 @@
 					c: oldTransform.c,
 					d: oldTransform.d,
 					e: dx + oldTransform.e,
-					f: dy + oldTransform.f
+					f: dy + oldTransform.f,
 				}
 			};
 		})
@@ -545,8 +544,10 @@
 	function scaleSelection(x, y) {
 		var tx = rx = (x - selected.x) / (selected.w);
 		var ty = ry = (y - selected.y) / (selected.h);
+		var _selected = selected, _x = x, _y = y;
 		var msgs = selected_els.map(function (el, i) {
 			var oldTransform = transform_elements[i];
+			// origin = el.transformedBBox(); 
 			var x = el.transformedBBox().r[0];
 			var y = el.transformedBBox().r[1];
 			var rx = tx, ry = ty;
@@ -554,22 +555,25 @@
 				rx = Math.abs(rx) > Math.abs(ry) ? Math.abs(ry) * tx / Math.abs(tx) : Math.abs(rx) * tx / Math.abs(tx);
 				ry = Math.abs(rx) * ty / Math.abs(ty);
 			}
-			var a = oldTransform.a * rx;
-			var d = oldTransform.d * ry;
-			var e = selected.x * (1 - rx) - x * a +
-				(x * oldTransform.a + oldTransform.e) * rx
-			var f = selected.y * (1 - ry) - y * d +
-				(y * oldTransform.d + oldTransform.f) * ry
+			var a = rx;
+			var d = ry;
+			var b = 0;
+			var c = 0;
+			var ee = selected.x * (1 - rx);
+			var ff = selected.y * (1 - ry);
+			var e = oldTransform.a * ee + oldTransform.c * ff + oldTransform.e;
+			var f = oldTransform.b * ee + oldTransform.d * ff + oldTransform.f;
+			var finalMatrix = matProduct([[a, c, ee], [b, d, ff], [0, 0, 1]], [[oldTransform.a, oldTransform.c, oldTransform.e], [oldTransform.b, oldTransform.d, oldTransform.f], [0, 0, 1]])
 			return {
 				type: "update",
 				id: el.id,
 				transform: {
-					a: a,
-					b: oldTransform.b * rx,
-					c: oldTransform.c * ry,
-					d: d,
-					e: e,
-					f: f
+					a: finalMatrix[0][0],
+					b: finalMatrix[1][0],
+					c: finalMatrix[0][1],
+					d: finalMatrix[1][1],
+					e: finalMatrix[0][2],
+					f: finalMatrix[1][2]
 				}
 			};
 		})
@@ -592,7 +596,6 @@
 			draw(msg);
 		}
 		exsitTransform = true;
-		console.log("scale?");
 	}
 
 	function updateRect(x, y, rect) {
@@ -795,7 +798,7 @@
 	}
 
 	function release(x, y, evt, isTouchEvent) {
-		if ((selected.x != x) && (selected.y != y))
+		if (selected && (selected.x != x) && (selected.y != y))
 			move(x, y, evt, isTouchEvent);
 		releaseSelector(x, y, evt, isTouchEvent);
 		selected = null;

@@ -87,10 +87,6 @@
 			    type: "delete", 
 			    id: curLineId
 			});
-			Tools.socket.emit("pushActionToHistory",{ 
-				type: "delete", 
-				id: curLineId 
-			})
 		}
 		curLineId = "";
 	}
