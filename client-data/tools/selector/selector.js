@@ -552,8 +552,8 @@
 			var y = el.transformedBBox().r[1];
 			var rx = tx, ry = ty;
 			if (el.tagName == 'text') {
-				rx = Math.abs(rx) > Math.abs(ry) ? Math.abs(ry) * tx / Math.abs(tx) : Math.abs(rx) * tx / Math.abs(tx);
-				ry = Math.abs(rx) * ty / Math.abs(ty);
+				tx = rx = Math.abs(rx) > Math.abs(ry) ? Math.abs(ry) * tx / Math.abs(tx) : Math.abs(rx) * tx / Math.abs(tx);
+				ty = ry = Math.abs(rx) * ty / Math.abs(ty);
 			}
 			var a = rx;
 			var d = ry;
@@ -580,7 +580,8 @@
 		var msg = {
 			_children: msgs
 		};
-
+		rx = tx;
+		ry = ty;
 		var tmatrix = get_transform_matrix(selectionRect);
 		tmatrix.a = rx;
 		tmatrix.d = ry;

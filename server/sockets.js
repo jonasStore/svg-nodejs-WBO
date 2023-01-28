@@ -23,6 +23,7 @@
  *
  * @licend
  */
+var fs = require('fs');
 var iolib = require("socket.io"),
   log = require("./log.js").log,
   BoardData = require("./boardData.js").BoardData,
@@ -195,12 +196,11 @@ function socketConnection(socket) {
   // }))
 }
 
-
-
 function broadcastHistoryAction(msg, eventName, socket) {
   var boardName = msg.board || "anonymous";
   socket.broadcast.to(boardName).emit(eventName, msg)
 }
+
 function handleMessage(boardName, message, socket) {
 
   if (message.tool === "Cursor") {
@@ -258,11 +258,11 @@ async function saveHistory(boardName, message, socket) {
       case "delete":
         if (id) {
           if (message.sendBack && !message.sendToRedo) {
-            socket.broadcast.to(boardName).emit("addActionToHistory", board.get(id));
+            // socket.broadcast.to(boardName).emit("addActionToHistory", board.get(id));
             socket.emit("addActionToHistory", board.get(id));
             console.log("TEST\t\tEmitundo");
           } else if (message.sendBack && message.sendToRedo) {
-            socket.broadcast.to(boardName).emit("addActionToHistoryRedo", board.get(id));
+            // socket.broadcast.to(boardName).emit("addActionToHistoryRedo", board.get(id));
             socket.emit("addActionToHistoryRedo", board.get(id));
             console.log("TEST\t\tEmitRedo");
           }

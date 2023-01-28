@@ -81,36 +81,35 @@ Tools.connect = function () {
 
 	this.socket.on("addActionToHistory", function (msg) {
 		Tools.addActionToHistory(msg, true);
-		// Tools.enableToolsEl('undo');
+		console.log("TrackReceiveUndoAction\t",msg);
 	});
 
 	this.socket.on("addActionToHistoryRedo", function (msg) {
 		Tools.addActionToHistoryRedo(msg, true);
-		// Tools.historyRedo.push(msg);
-		// Tools.enableToolsEl('redo');
+		console.log("TrackReceiveRedoAction\t",msg);
 	});
 
-	this.socket.on("pushActionToHistory", function (msg) {
-		var dontClear = msg.dontClear;
-		Tools.addActionToHistory(msg, dontClear);
-	})
+	// this.socket.on("pushActionToHistory", function (msg) {
+	// 	var dontClear = msg.dontClear;
+	// 	Tools.addActionToHistory(msg, dontClear);
+	// })
 
-	this.socket.on("popActionToHistory", function (msg) {
-		Tools.history.pop();
-		if (Tools.history.length == 0)
-			Tools.disableToolsEl('undo');
-	})
+	// this.socket.on("popActionToHistory", function (msg) {
+	// 	Tools.history.pop();
+	// 	if (Tools.history.length == 0)
+	// 		Tools.disableToolsEl('undo');
+	// })
 
-	this.socket.on("pushActionToHistoryRedo", function (msg) {
-		var dontClear = msg.dontClear;
-		Tools.addActionToHistoryRedo(msg, dontClear)
-	})
+	// this.socket.on("pushActionToHistoryRedo", function (msg) {
+	// 	var dontClear = msg.dontClear;
+	// 	Tools.addActionToHistoryRedo(msg, dontClear)
+	// })
 
-	this.socket.on("popActionToHistoryRedo", function (msg) {
-		Tools.historyRedo.pop();
-		if (Tools.historyRedo.length == 0)
-			Tools.disableToolsEl('redo')
-	})
+	// this.socket.on("popActionToHistoryRedo", function (msg) {
+	// 	Tools.historyRedo.pop();
+	// 	if (Tools.historyRedo.length == 0)
+	// 		Tools.disableToolsEl('redo')
+	// })
 
 	this.socket.on("reconnect", function onReconnection() {
 		Tools.socket.emit('joinboard', Tools.boardName);
@@ -418,7 +417,7 @@ function batchCall(fn, args) {
 function handleMessage(message) {
 	//Check if the message is in the expected format
 	if (!message.tool && !message._children) {
-		console.error("Received a badly formatted message (no tool). ", message);
+		// console.error("Received a badly formatted message (no tool). ", message);
 	}
 	if (message.userCount) updateUserCount(message.userCount);
 	if (message.tool) messageForTool(message);
@@ -668,8 +667,9 @@ Tools.applyHooks = function (hooks, object) {
 // Utility functions
 
 Tools.generateUID = function (prefix, suffix) {
-	var uid = Date.now().toString(36); //Create the uids in chronological order
-	uid += (Math.round(Math.random() * 36)).toString(36); //Add a random character at the end
+	var uid = Date.now().toString(26); //Create the uids in chronological order
+
+	uid += (Math.round(Math.random() * 1e10)).toString(36); //Add a random character at the end
 	if (prefix) uid = prefix + uid;
 	if (suffix) uid = uid + suffix;
 	return uid;
@@ -808,13 +808,16 @@ Tools.getOpacity = (function opacity() {
 Tools.undo = (function () {
 	const el = document.getElementById("undo");
 
-	function update() {
+	async function update() {
+		if (el.className.includes('disabled'))
+			return;
+		Tools.disableToolsEl('undo');
+		Tools.disableToolsEl('redo');
 		if (Tools.history.length) {
-			if(Tools.hideSelectionUI)
+			if (Tools.hideSelectionUI)
 				Tools.hideSelectionUI();
 			const action = Tools.history.pop();
-			console.log("Undo", Tools.history,action);
-
+			console.log("TrackHistroyUndo\t",Tools.history,action);
 			if (Tools.history.length === 0) {
 				Tools.disableToolsEl('undo');
 			}
@@ -828,7 +831,7 @@ Tools.undo = (function () {
 						Tools.drawAndSend(action, instrument);
 					} else {
 						const dataForRedo = { type: 'array', events: [] };
-						action.events.forEach(function (event) {
+						await action.events.forEach(function (event) {
 							event.sendBack = true;
 							dataForRedo.events.push({ type: 'delete', id: event.id, dontClear: true });
 							if (event.tool === 'Pencil') {
@@ -837,12 +840,12 @@ Tools.undo = (function () {
 								Tools.drawAndSend(event, Tools.list[event.tool]);
 							}
 						});
-						Tools.historyRedo.push(dataForRedo);
+						Tools.addActionToHistoryRedo(dataForRedo,true);
 					}
 					break;
 				case "line":
 					_drawLine(action);
-					Tools.historyRedo.push({ type: "delete", id: action.id });
+					Tools.addActionToHistoryRedo({ type: "delete", id: action.id },true);
 					break;
 				case "delete":
 					instrument = Tools.list.Eraser;
@@ -852,21 +855,20 @@ Tools.undo = (function () {
 				case "update":
 					instrument = Tools.list.Selector;
 					action.dontClear = true;
-					const dataForRedo  = JSON.parse(JSON.stringify(action));
-					for(var i=0; i< dataForRedo._children.length; i++){
+					const dataForRedo = JSON.parse(JSON.stringify(action));
+					for (var i = 0; i < dataForRedo._children.length; i++) {
 						dataForRedo._children[i].transform = action._children[i].old_transform;
 						dataForRedo._children[i].old_transform = action._children[i].transform;
 					}
-					Tools.historyRedo.push(dataForRedo)
-					// console.log("historyRedo", Tools.historyRedo,dataForRedo)
+					Tools.addActionToHistoryRedo(dataForRedo,true);
+					console.log("TrackInsertDataToRedo\t", dataForRedo);
 					break;
 				default:
 					instrument = Tools.list[action.tool];
-					Tools.historyRedo.push({ type: "delete", id: action.id });
+					Tools.addActionToHistoryRedo({ type: "delete", id: action.id },true);
 					break;
 			}
 			if (action.type !== "line" && action.type !== "array") {
-				// console.log(action);
 				Tools.drawAndSend(action, instrument);
 			}
 			Tools.enableToolsEl('redo');
@@ -882,9 +884,14 @@ Tools.undo = (function () {
 Tools.redo = (function () {
 	const el = document.getElementById("redo");
 
-	function update() {
+	async function update() {
+		if (el.className.includes('disabled'))
+			return;
+		Tools.disableToolsEl('undo');
+		Tools.disableToolsEl('redo');
 		if (Tools.historyRedo.length) {
 			const action = Tools.historyRedo.pop();
+			console.log("TrackHistroyRedo\t",Tools.historyRedo,action);
 			if (Tools.historyRedo.length === 0) {
 				Tools.disableToolsEl('redo');
 			}
@@ -898,7 +905,7 @@ Tools.redo = (function () {
 						Tools.drawAndSend(action, instrument);
 					} else {
 						const dataForUndo = { type: 'array', events: [], dontClear: true };
-						action.events.forEach(function (event) {
+						await action.events.forEach(function (event) {
 							event.sendBack = true;
 							dataForUndo.events.push({ type: 'delete', id: event.id });
 							if (event.tool === 'Pencil') {
@@ -907,12 +914,12 @@ Tools.redo = (function () {
 								Tools.drawAndSend(event, Tools.list[event.tool]);
 							}
 						});
-						Tools.history.push(dataForUndo);
+						Tools.addActionToHistory(dataForUndo,true)
 					}
 					break;
 				case "line":
 					_drawLine(action);
-					Tools.history.push({ type: "delete", id: action.id });
+					Tools.addActionToHistory({ type: "delete", id: action.id },true)
 					break;
 				case "delete":
 					instrument = Tools.list.Eraser;
@@ -921,17 +928,17 @@ Tools.redo = (function () {
 				case "update":
 					instrument = Tools.list.Selector;
 					action.dontClear = true;
-					const dataForRedo  = JSON.parse(JSON.stringify(action));
-					for(var i=0; i< dataForRedo._children.length; i++){
+					const dataForRedo = JSON.parse(JSON.stringify(action));
+					for (var i = 0; i < dataForRedo._children.length; i++) {
 						dataForRedo._children[i].transform = action._children[i].old_transform;
 						dataForRedo._children[i].old_transform = action._children[i].transform;
 					}
-					Tools.history.push(dataForRedo)
-					// console.log("undoHistory", Tools.history);
+					Tools.addActionToHistory(dataForRedo,true)
+					
 					break;
 				default:
 					instrument = Tools.list[action.tool];
-					Tools.history.push({ type: "delete", id: action.id });
+					Tools.addActionToHistory({ type: "delete", id: action.id },true)
 					break;
 			}
 			if (action.type !== "line" && action.type !== "array") {
@@ -944,11 +951,11 @@ Tools.redo = (function () {
 	el.onclick = update;
 	return function () {
 		update();
-		console.log("History:\n", Tools.history);
 	}
 })();
 
 function _drawLine(action) {
+	console.log(action.transform);
 	Tools.drawAndSend({
 		'type': 'line',
 		'id': action.id,
@@ -972,6 +979,8 @@ Tools.history = [];
 Tools.historyRedo = [];
 
 Tools.addActionToHistory = function (data, dontClear) {
+
+
 	Tools.enableToolsEl('undo');
 	if (Tools.history.length === 80) {
 		Tools.history.shift();
@@ -982,9 +991,13 @@ Tools.addActionToHistory = function (data, dontClear) {
 		Tools.historyRedo.splice(0, Tools.historyRedo.length);
 	}
 	Tools.history.push(data);
+	if (Tools.historyRedo.length != 0)
+		Tools.enableToolsEl('redo');
 }
 
 Tools.addActionToHistoryRedo = function (data, dontClear) {
+
+
 	Tools.enableToolsEl('redo');
 	if (Tools.historyRedo.length === 80) {
 		Tools.historyRedo.shift();
@@ -995,6 +1008,8 @@ Tools.addActionToHistoryRedo = function (data, dontClear) {
 		Tools.historyRedo.splice(0, Tools.historyRedo.length);
 	}
 	Tools.historyRedo.push(data);
+	if (Tools.history.length != 0)
+		Tools.enableToolsEl('undo');
 }
 
 //Scale the canvas on load
