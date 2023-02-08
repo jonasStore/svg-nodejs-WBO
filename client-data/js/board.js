@@ -81,12 +81,12 @@ Tools.connect = function () {
 
 	this.socket.on("addActionToHistory", function (msg) {
 		Tools.addActionToHistory(msg, true);
-		console.log("TrackReceiveUndoAction\t",msg);
+		// console.log("TrackReceiveUndoAction\t",msg);
 	});
 
 	this.socket.on("addActionToHistoryRedo", function (msg) {
 		Tools.addActionToHistoryRedo(msg, true);
-		console.log("TrackReceiveRedoAction\t",msg);
+		// console.log("TrackReceiveRedoAction\t",msg);
 	});
 
 	// this.socket.on("pushActionToHistory", function (msg) {
@@ -817,7 +817,7 @@ Tools.undo = (function () {
 			if (Tools.hideSelectionUI)
 				Tools.hideSelectionUI();
 			const action = Tools.history.pop();
-			console.log("TrackHistroyUndo\t",Tools.history,action);
+			// console.log("TrackHistroyUndo\t",Tools.history,action);
 			if (Tools.history.length === 0) {
 				Tools.disableToolsEl('undo');
 			}
@@ -891,7 +891,7 @@ Tools.redo = (function () {
 		Tools.disableToolsEl('redo');
 		if (Tools.historyRedo.length) {
 			const action = Tools.historyRedo.pop();
-			console.log("TrackHistroyRedo\t",Tools.historyRedo,action);
+			// console.log("TrackHistroyRedo\t",Tools.historyRedo,action);
 			if (Tools.historyRedo.length === 0) {
 				Tools.disableToolsEl('redo');
 			}
@@ -955,7 +955,6 @@ Tools.redo = (function () {
 })();
 
 function _drawLine(action) {
-	console.log(action.transform);
 	Tools.drawAndSend({
 		'type': 'line',
 		'id': action.id,
@@ -963,6 +962,7 @@ function _drawLine(action) {
 		'size': action.size,
 		'opacity': action.opacity,
 		'dotted': action.dotted,
+		'transform': action.transform
 	}, Tools.list.Pencil);
 	for (var child of action._children) {
 		Tools.drawAndSend({

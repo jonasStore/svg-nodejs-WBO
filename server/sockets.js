@@ -241,7 +241,7 @@ async function saveHistoryArray(boardName, message, socket) {
   });
   if (socketEventName) {
     socket.emit(socketEventName, data);
-    socket.broadcast.to(boardName).emit(socketEventName, data);
+    // socket.broadcast.to(boardName).emit(socketEventName, data);
   }
 }
 

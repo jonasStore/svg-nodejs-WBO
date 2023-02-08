@@ -303,7 +303,6 @@
 					}
 				};
 			})
-			// console.log("test", origin_els);
 		}
 		hideSelectionButtons();
 		selectorState = selectorStates.transform;
@@ -328,7 +327,6 @@
 			[0, 0, 1]];
 			return matInverse(matrix);
 		})
-		// console.log("inv", transform_elements, inv_transform_elements);
 		var tmatrix = get_transform_matrix(selectionRect);
 		selectionRectTransform = {
 			a: tmatrix.a, d: tmatrix.d,
@@ -380,13 +378,10 @@
 			var oldTransform = transform_elements[i];
 
 			var curPos = matProduct(inv_transform_elements[i], [[Cx], [Cy], [1]]);
-			// console.log("inv", [Cx, Cy, 0], curPos);
 			var a = Math.cos(angle);
 			var b = Math.sin(angle);
 			var c = -Math.sin(angle);
 			var d = Math.cos(angle);
-			// var e = -curPos[0][0] * Math.cos(angle) + curPos[1][0] * Math.sin(angle) + curPos[0][0];
-			// var f = -curPos[0][0] * Math.sin(angle) - curPos[1][0] * Math.cos(angle) + curPos[1][0];
 			var e = -Cx * Math.cos(angle) + Cy * Math.sin(angle) + Cx;
 			var f = -Cx * Math.sin(angle) - Cy * Math.cos(angle) + Cy;
 			var finalMatrix = matProduct([[a, c, e], [b, d, f], [0, 0, 1]], [[oldTransform.a, oldTransform.c, oldTransform.e], [oldTransform.b, oldTransform.d, oldTransform.f], [0, 0, 1]])
@@ -465,7 +460,6 @@
 			[0, 0, 1]];
 			return matInverse(matrix);
 		})
-		console.log("inv", transform_elements, inv_transform_elements);
 		var tmatrix = get_transform_matrix(selectionRect);
 		selectionRectTransform = {
 			a: tmatrix.a, d: tmatrix.d,
@@ -490,13 +484,32 @@
 		tmatrix.f = 0;
 	}
 
+	function customBBox(element) {
+		const svg = document.querySelector('svg');
+		const boundingClientRectGroup = element.getBoundingClientRect();
+
+		var mtr = svg.getScreenCTM().inverse(),
+			p1 = svg.createSVGPoint(),
+			p2 = svg.createSVGPoint();
+		p1.x = boundingClientRectGroup.left;
+		p1.y = boundingClientRectGroup.top;
+
+		p2.x = boundingClientRectGroup.right;
+		p2.y = boundingClientRectGroup.bottom;
+		p1 = p1.matrixTransform(mtr);
+		p2 = p2.matrixTransform(mtr);
+		return { r: [p1.x, p1.y], a: [p2.x-p1.x, 0], b: [0, p2.y-p1.y] };
+	}
 
 	function calculateSelection() {
 		var selectionTBBox = selectionRect.transformedBBox();
 		var elements = Tools.drawingArea.children;
 		var selected = [];
 		for (var i = 0; i < elements.length; i++) {
-			if (transformedBBoxIntersects(selectionTBBox, elements[i].transformedBBox()))
+			// var el_BBox = elements[0].getBoundingClientRect();
+			// el_BBox = {r: [el_BBox.x, el_BBox.y], a: [el_BBox.width,0], b: [0, el_BBox.height]};
+			console.log(selectionTBBox, customBBox(elements[i]));
+			if (transformedBBoxIntersects(selectionTBBox, customBBox(elements[i])))
 				selected.push(Tools.drawingArea.children[i]);
 		}
 		return selected;
@@ -511,7 +524,7 @@
 			var matrix = [[el_matrix.a, el_matrix.c, el_matrix.e],
 			[el_matrix.b, el_matrix.d, el_matrix.f],
 			[0, 0, 1]]
-			var inv_matrix = matInverse(matrix);
+			// var inv_matrix = matInverse(matrix);
 			return {
 				type: "update",
 				id: el.id,
@@ -544,12 +557,8 @@
 	function scaleSelection(x, y) {
 		var tx = rx = (x - selected.x) / (selected.w);
 		var ty = ry = (y - selected.y) / (selected.h);
-		var _selected = selected, _x = x, _y = y;
 		var msgs = selected_els.map(function (el, i) {
 			var oldTransform = transform_elements[i];
-			// origin = el.transformedBBox(); 
-			var x = el.transformedBBox().r[0];
-			var y = el.transformedBBox().r[1];
 			var rx = tx, ry = ty;
 			if (el.tagName == 'text') {
 				tx = rx = Math.abs(rx) > Math.abs(ry) ? Math.abs(ry) * tx / Math.abs(tx) : Math.abs(rx) * tx / Math.abs(tx);
@@ -612,11 +621,13 @@
 		if (true) {
 			angle = 0;
 			var padding = 20;
-			var tmpBBox = {};
 			var point = [];
 			var minX = Infinity, minY = Infinity, maxX = 0, maxY = 0, i;
 			selected_els.map((el, i) => {
-				var bbox = el.transformedBBox();
+				// var el_BBox = el.getBoundingClientRect();
+				// el_BBox = { r: [el_BBox.x, el_BBox.y], a: [el_BBox.width, 0], b: [0, el_BBox.height] };
+				// // console.log(el.getBoundingClientRect(), el_BBox);
+				var bbox = customBBox(el);
 				point = [
 					[bbox.r[0], bbox.r[1]],
 					[bbox.r[0] + bbox.a[0], bbox.r[1] + bbox.a[1]],
